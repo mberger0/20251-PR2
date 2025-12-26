@@ -8,12 +8,69 @@ let currentIndex = 0;
 // Mostramos 12 por página
 const pageSize = 12; // Número de pokémons por página que consideréis oportuno
 // Total de pokémons a cargar,
-const totalPokemons = 151; // P.e. 151, los de primera generación, pero podéis cambiarlo
+const totalPokemons = config.POKEMON_LIMIT; // P.e. 151, los de primera generación, pero podéis cambiarlo (lo he cambiado para que coja el valor de config.js)
 
 let currentURL = `${config.apiBaseUrl}`+`${totalPokemons}`; // URL inicial para obtener los pokémons
 
 let user;
 
+async function loadPokemons() {
+    // si ya hay cache, la uso
+    const cached = localStorage.getItem(POKEMONS_CACHE_KEY); // POKEMONS_CACHE_KEY está definido en config.js
+    if (cached) {
+        const parsed = JSON.parse(cached);
+        allPokemons = parsed.map(p => Pokemon.fromJSON(p));
+        filteredPokemons = [...allPokemons];
+        return allPokemons;
+    }
+
+    // en caso contrario, lo cargo desde la API
+    const pokemons = [];
+
+    try {
+        mostrarLoader();
+        // cargo los pokémons uno a uno (la API no permite cargar muchos a la vez con todos los detalles)
+        for (let i = 1; i <= totalPokemons; i++) {
+            const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+            if (!response.ok) continue;
+            
+            const data = await response.json();
+            // creo el objeto Pokémon
+            const pokemon = new Pokemon({
+                id: data.id,
+                name: data.name,
+                height: data.height,
+                weight: data.weight,
+                baseExperience: data.base_experience,
+                abilities: data.abilities.map(a => a.ability.name),
+                types: data.types.map(t => t.type.name),
+                sprites: data.sprites.other['official-artwork'].front_default,
+                stats: data.stats.map(s => ({
+                    name: s.stat.name,
+                    value: s.base_stat
+                }))
+            });
+
+            pokemons.push(pokemon);
+        }
+
+        // una vez terminado, guardo la cache
+        localStorage.setItem(
+            POKEMONS_CACHE_KEY,
+            JSON.stringify(pokemons.map(p => p.toJSON()))
+        );
+        // actualizo las variables globales
+        allPokemons = pokemons;
+        filteredPokemons = [...pokemons];
+        return pokemons;
+    // Si no se puede cargar, muestro error
+    } catch (error) {
+        console.error('Error cargando pokémons:', error);
+        return [];
+    } finally {
+        ocultarLoader();
+    }
+}
 
 async function getPokemons(url = currentURL) {
     // Debéis de obtener la lista de pokémons desde la API.

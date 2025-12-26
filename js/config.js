@@ -1,5 +1,6 @@
 const config = {
-    apiBaseUrl: 'https://pokeapi.co/api/v2/pokemon?limit='
+    apiBaseUrl: 'https://pokeapi.co/api/v2/pokemon?limit=',
+    POKEMON_LIMIT: 151 // en caso de querer cambiar el límite de pokémons se hace aquí
 };
 
 const cities = [
@@ -34,3 +35,6 @@ const listNames = {
     wishes: "Deseos",
 };
 
+// Claves de localStorage (cache y estado)
+const POKEMONS_CACHE_KEY = 'pokemonsCache';
+const FILTERS_STATE_KEY = 'filtersState';
