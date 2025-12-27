@@ -9,6 +9,7 @@ let currentIndex = 0;
 const pageSize = 12; // Número de pokémons por página que consideréis oportuno
 // Total de pokémons a cargar,
 const totalPokemons = config.POKEMON_LIMIT; // P.e. 151, los de primera generación, pero podéis cambiarlo (lo he cambiado para que coja el valor de config.js)
+const CACHE_KEY = POKEMONS_CACHE_KEY; // POKEMONS_CACHE_KEY está definido en config.js
 
 let currentURL = `${config.apiBaseUrl}`+`${totalPokemons}`; // URL inicial para obtener los pokémons
 
@@ -16,7 +17,7 @@ let user;
 
 async function loadPokemons() {
     // si ya hay cache, la uso
-    const cached = localStorage.getItem(POKEMONS_CACHE_KEY); // POKEMONS_CACHE_KEY está definido en config.js
+    const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
         const parsed = JSON.parse(cached);
         allPokemons = parsed.map(p => Pokemon.fromJSON(p));
@@ -56,7 +57,7 @@ async function loadPokemons() {
 
         // una vez terminado, guardo la cache
         localStorage.setItem(
-            POKEMONS_CACHE_KEY,
+            CACHE_KEY,
             JSON.stringify(pokemons.map(p => p.toJSON()))
         );
         // actualizo las variables globales
@@ -136,7 +137,120 @@ function ocultarLoader() {
 
 /* Añadir las funciones que consideréis necesarias*/
 
+// función para crear la tarjeta de un pokémon
+// devuelve un elemento div con la clase 'pokemon-card'
+function createPokemonCard(pokemon) {
+    const div = document.createElement('div');
+    div.className = 'pokemon-card';
+    // relleno el contenido
+    div.innerHTML = `
+        <img src="${pokemon.sprites}" alt="${pokemon.name}">
+        <h4>#${pokemon.id.toString().padStart(3, '0')}</h4>
+        <h3>${pokemon.name}</h3>
+        <div class="types">
+            ${pokemon.types.map(t => `<span class="type ${t}">${t}</span>`).join('')}
+        </div>
+    `;
 
+    return div;
+}
 
+// función para renderizar la siguiente página de pokémons
+// añade al contenedor 'resultados' las tarjetas de los pokémons
+function renderNextPage() {
+    const container = document.getElementById('resultados');
+    // obtengo el slice de pokémons a renderizar
+    const slice = filteredPokemons.slice(
+        currentIndex,
+        currentIndex + pageSize
+    );
+    // los añado al contenedor
+    slice.forEach(p => {
+        container.appendChild(createPokemonCard(p));
+    });
 
+    currentIndex += pageSize;
 
+    // desactivo botón si no quedan
+    if (currentIndex >= filteredPokemons.length) {
+        document.getElementById('loadMore').disabled = true;
+    }
+}
+
+//botón para cargar más pokémons
+document.getElementById('loadMore').addEventListener('click', () => {
+    renderNextPage();
+});
+
+// funcion para inicializar los filtros
+// añade los tipos al listado de filtros y asigna el evento al botón de búsqueda
+function initFilters() {
+    const typeList = document.getElementById('typeList');
+    // obtengo la lista de tipos únicos
+    type_list.forEach(type => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <label>
+                <input type="checkbox" value="${type.id}">
+                ${type.name}
+            </label>
+        `;
+        typeList.appendChild(li);
+    });
+    // asigno el evento al botón de búsqueda
+    document.getElementById('searchButton')
+        .addEventListener('click', applyFilters);
+}
+
+// función para aplicar los filtros
+// actualiza la lista de pokémons filtrados y resetea la paginación
+function applyFilters() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const weightMin = Number(document.getElementById('weightMin').value || 0);
+    const weightMax = Number(document.getElementById('weightMax').value || Infinity);
+    // tipos seleccionados
+    const selectedTypes = Array.from(
+        document.querySelectorAll('#typeList input:checked')
+    ).map(cb => cb.value);
+    // filtro los pokémons
+    filteredPokemons = allPokemons.filter(pokemon => {
+
+        // nombre o número
+        const matchSearch =
+            pokemon.name.includes(search) ||
+            pokemon.id.toString().includes(search);
+
+        // peso
+        const matchWeight =
+            pokemon.weight >= weightMin &&
+            pokemon.weight <= weightMax;
+
+        // tipos
+        const matchType =
+            selectedTypes.length === 0 ||
+            selectedTypes.some(t => pokemon.types.includes(t));
+
+        return matchSearch && matchWeight && matchType;
+    });
+
+    resetAndRender();
+}
+
+// función para resetear la paginación y renderizar desde el inicio
+function resetAndRender() {
+    currentIndex = 0;
+    document.getElementById('resultados').innerHTML = '';
+    document.getElementById('loadMore').disabled = false;
+    renderNextPage();
+    // desactivo botón si no hay resultados
+    if (filteredPokemons.length === 0) {
+    document.getElementById('loadMore').disabled = true;
+}
+}
+
+// cargo cache, pinto primera página e inicializo filtros al cargar la página
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadPokemons();
+    renderNextPage();
+    initFilters();
+});
