@@ -90,6 +90,12 @@ saveButton.addEventListener('click', () => { // al hacer click en guardar se val
     citySelect.value = cityByCP.name;
   }
 
+  // Validación email formato correcto
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+if (!emailRegex.test(email)) {
+  alert('El email no tiene un formato válido');
+  return;
+}
   // Crear y guardar usuario
   const user = new User({ 
     name,

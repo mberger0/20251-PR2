@@ -27,21 +27,14 @@ const registrationButton = document.getElementById('registration');
             alert('Debes introducir usuario y contraseña');
             return;
         }
-
-        // Obtengo los usuarios registrados
-        const users = User.getAll();
-
-        // Busco coincidencia exacta
-        const user = users.find(
-            u => u.username === username && u.password === password
-        );
-
-        if (user) {
-            // Si el login es correcto guardo la sesión
-            User.setLoggedUser(username);
-            window.location.href = 'indice.html';
+        // busco el usuario
+        const user = User.findByUsername(username);
+        // si el usuario existe y la contraseña es correcta
+        if (user && user.getPassword() === password) {
+        User.setLoggedUser(username); // guardo el usuario logueado
+        window.location.href = 'indice.html'; // redirijo a la página principal
         } else {
-            alert('Usuario o contraseña incorrectos');
+        alert('Usuario o contraseña incorrectos');
         }
         });
 

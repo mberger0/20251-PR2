@@ -73,7 +73,9 @@ async function loadPokemons() {
     }
 }
 
-async function getPokemons(url = currentURL) {
+// He decidido no usar las funciones getPokemons y getPokemonDescription que se pedían, ya que he decidido trabajar directamente sobre cache local.
+
+/*async function getPokemons(url = currentURL) {
     // Debéis de obtener la lista de pokémons desde la API.
     // La URL por defecto es la que se encuentra en currentURL
     // Tened en cuenta que la API devuelve una lista con nombre y URL de detalles de cada pokémon.
@@ -121,7 +123,7 @@ async function getPokemons(url = currentURL) {
         console.error('Error crítico en getPokemonDescription:', error);
         return "Error al cargar descripción";
     }
-}
+}*/
 
 // Función para mostrar el loader y desenfocar la pantalla
 function mostrarLoader() {
@@ -137,6 +139,11 @@ function ocultarLoader() {
 
 /* Añadir las funciones que consideréis necesarias*/
 
+// función para ir a la página de detalle de un pokémon (al hacer click en su tarjeta o nombre)
+function goToDetail(id) {
+  window.location.href = `detail.html?id=${id}`;
+}
+
 // función para crear la tarjeta de un pokémon
 // devuelve un elemento div con la clase 'pokemon-card'
 function createPokemonCard(pokemon) {
@@ -146,14 +153,102 @@ function createPokemonCard(pokemon) {
     div.innerHTML = `
         <img src="${pokemon.sprites}" alt="${pokemon.name}">
         <h4>#${pokemon.id.toString().padStart(3, '0')}</h4>
-        <h3>${pokemon.name}</h3>
+        <h3>${capitalize(pokemon.name)}</h3>
+
         <div class="types">
-            ${pokemon.types.map(t => `<span class="type ${t}">${t}</span>`).join('')}
+        ${pokemon.types.map(t => `<span class="type ${t}">${capitalize(t)}</span>`).join(', ')}
+        </div>
+
+        <div class="actions">
+        <button class="team-btn">Mi equipo</button>
+        <button class="wish-btn">Deseos</button>
         </div>
     `;
 
+    setupListButtons(div, pokemon);
+    // añado los listeners para ir a los detalles del pokémon
+    const img = div.querySelector('img');
+    const name = div.querySelector('h3');
+
+    img.addEventListener('click', () => goToDetail(pokemon.id));
+    name.addEventListener('click', () => goToDetail(pokemon.id));
+
     return div;
 }
+
+
+// conecto los botones con manageList()
+function setupListButtons(card, pokemon) {
+    if (!user) return;
+    // obtengo los botones
+    const teamBtn = card.querySelector('.team-btn');
+    const wishBtn = card.querySelector('.wish-btn');
+    // asigno los eventos
+    teamBtn.addEventListener('click', () => {
+        handleListAction(user, pokemon, 'myTeam');
+        refreshButtonState(user, pokemon, teamBtn, wishBtn);
+    });
+
+    wishBtn.addEventListener('click', () => {
+        handleListAction(user, pokemon, 'wishes');
+        refreshButtonState(user, pokemon, teamBtn, wishBtn);
+    });
+    // actualizo el estado inicial
+    refreshButtonState(user, pokemon, teamBtn, wishBtn);
+}
+
+// funcion para añadir o eliminar pokémon de una lista
+function handleListAction(user, pokemon, listName) {
+    // compruebo si ya está en la lista
+    const exists =
+        listName === 'myTeam'
+            ? user.getMyTeam().has(pokemon.id)
+            : user.getWishes().has(pokemon.id);
+    // llamo a manageList
+    const ok = user.manageList(
+        pokemon,
+        listName,
+        exists ? 'remove' : 'add'
+    );
+    // si no se ha podido añadir o eliminar, muestro alerta
+    if (!ok) {
+        alert(
+            listName === 'myTeam'
+                ? 'No se puede añadir más de 6 Pokémons al equipo'
+                : 'No se ha podido realizar la acción'
+        );
+        return;
+    }
+    // actualizo el usuario en localStorage
+    user.update();
+    // muestro alerta de añadido o eliminado
+    alert(
+        exists
+            ? 'Pokémon eliminado de la lista'
+            : 'Pokémon añadido a la lista'
+    );
+
+    updateMenu();
+}
+
+
+// función para actualizar el estado de los botones según si el pokémon está en la lista o no
+function refreshButtonState(user, pokemon, teamBtn, wishBtn) {
+    if (teamBtn) {
+        teamBtn.textContent =
+            user.getMyTeam().has(pokemon.id)
+                ? 'X Quitar'
+                : '+ Mi equipo';
+    }
+
+    if (wishBtn) {
+        wishBtn.textContent =
+            user.getWishes().has(pokemon.id)
+                ? 'X Quitar'
+                : '+ Deseos';
+    }
+}
+
 
 // función para renderizar la siguiente página de pokémons
 // añade al contenedor 'resultados' las tarjetas de los pokémons
@@ -168,7 +263,7 @@ function renderNextPage() {
     slice.forEach(p => {
         container.appendChild(createPokemonCard(p));
     });
-
+    // actualizo el índice
     currentIndex += pageSize;
 
     // desactivo botón si no quedan
@@ -216,9 +311,11 @@ function applyFilters() {
     filteredPokemons = allPokemons.filter(pokemon => {
 
         // nombre o número
+        const paddedId = pokemon.id.toString().padStart(3, '0'); // id con ceros a la izquierda (permite buscar 001, 002, etc)
         const matchSearch =
-            pokemon.name.includes(search) ||
-            pokemon.id.toString().includes(search);
+        pokemon.name.includes(search) || // nombre
+        pokemon.id.toString().includes(search) || // id normal
+        paddedId.includes(search); // id con ceros
 
         // peso
         const matchWeight =
@@ -233,7 +330,41 @@ function applyFilters() {
         return matchSearch && matchWeight && matchType;
     });
 
+    // ordeno según la selección
+    const order = document.getElementById('orden').value;
+    // ordeno la lista
+    filteredPokemons.sort((a, b) => {
+    switch (order) {
+        case 'idAsc':
+        return a.id - b.id;
+        case 'idDesc':
+        return b.id - a.id;
+        case 'nameAsc':
+        return a.name.localeCompare(b.name);
+        case 'nameDesc':
+        return b.name.localeCompare(a.name);
+        default:
+        return 0;
+    }
+    });
+
     resetAndRender();
+    saveFiltersState();
+}
+
+// funcion para guardar el estado de los filtros en localStorage 
+function saveFiltersState() {
+  const state = {
+    search: document.getElementById('searchInput').value,
+    weightMin: document.getElementById('weightMin').value,
+    weightMax: document.getElementById('weightMax').value,
+    selectedTypes: Array.from(
+      document.querySelectorAll('#typeList input:checked')
+    ).map(cb => cb.value),
+    order: document.getElementById('orden').value
+  };
+
+  localStorage.setItem(FILTERS_STATE_KEY, JSON.stringify(state));
 }
 
 // función para resetear la paginación y renderizar desde el inicio
@@ -248,9 +379,51 @@ function resetAndRender() {
 }
 }
 
+// función para restaurar el estado de los filtros desde localStorage
+function restoreFiltersState() {
+  const saved = localStorage.getItem(FILTERS_STATE_KEY);
+  if (!saved) return;
+
+  const state = JSON.parse(saved);
+  // restauro los valores
+  document.getElementById('searchInput').value = state.search || '';
+  document.getElementById('weightMin').value = state.weightMin || '';
+  document.getElementById('weightMax').value = state.weightMax || '';
+  document.getElementById('orden').value = state.order || 'idAsc';
+  // tipos
+  document
+    .querySelectorAll('#typeList input')
+    .forEach(cb => {
+      cb.checked = state.selectedTypes?.includes(cb.value);
+    });
+
+  applyFilters();
+}
+
 // cargo cache, pinto primera página e inicializo filtros al cargar la página
 document.addEventListener('DOMContentLoaded', async () => {
+  //aseguro que hay usuario logueado
+  user = User.getLoggedUser();
+  if (!user) {
+    window.location.href = 'index.html';
+    return;
+  }
     await loadPokemons();
-    renderNextPage();
-    initFilters();
+  initFilters();
+  // también guardo cuando cambio el select de orden
+  document.getElementById('orden').addEventListener('change', () => {
+    applyFilters();
 });
+  // compruebo si hay filtros guardados
+  const hasSavedFilters = localStorage.getItem(FILTERS_STATE_KEY);
+  if (hasSavedFilters) {
+    restoreFiltersState();
+  } else {
+    renderNextPage();
+  }
+});
+
+// funcion para que las tarjetas de pokémons tengan el nombre con la primera letra en mayúscula
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
