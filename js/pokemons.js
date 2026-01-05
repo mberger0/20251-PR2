@@ -159,9 +159,9 @@ function createPokemonCard(pokemon) {
         ${pokemon.types.map(t => `<span class="type ${t}">${capitalize(t)}</span>`).join(', ')}
         </div>
 
-        <div class="actions">
-        <button class="team-btn">Mi equipo</button>
-        <button class="wish-btn">Deseos</button>
+        <div class="actions pill-actions">
+            <button class="team-btn pill-left">+ Mi equipo</button>
+            <button class="wish-btn pill-right">+ Deseos</button>
         </div>
     `;
 

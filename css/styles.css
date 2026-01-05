@@ -15,7 +15,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(3, 37, 65); /* Color rojo de Marvel */
+    background-color: #032541; /* Color rojo de Marvel */
     color: white;
     padding: 10px 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Sombra para darle profundidad */
@@ -123,6 +123,34 @@ body {
 }
 
 /* Estilos para la sección de búsqueda */
+/* quito los bullet points de la lista de tipos */
+#typeList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+/* la muestro en forma de grid */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px 16px;
+  /* separo la parte inferior del resto de filtros */
+  padding-bottom: 20px;
+}
+/* evito que los tipos se dividan en varias líneas */
+#typeList li {
+  white-space: nowrap;
+}
+/* centro el filtro de tipos */
+.type-filter {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+
+/* capitalizo las primeras letras de los tipos */
+#typeList label {
+  text-transform: capitalize;
+}
+
 
 /* Estilos para la sección de ordenación */
 
@@ -139,7 +167,129 @@ body {
 */
 
 /* Estilos para el detalle Pokémon*/
+/* quito los bullet points de la lista de detalles */
+#pokemonDetail ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+/* alineo la lista de detalles a la izquierda pero mantengo el centro del contenedor */
+#pokemonDetail ul {
+  display: inline-block;
+  text-align: left;
+}
+
+#pokemonDetail {
+  text-align: center;
+}
 
 /* Estilos para las listas de Pokemon */
 
 /* Estilos para la login y registro */
+
+/* Estilos para botones generales */
+.btn {
+  background-color: #032541;      /* mismo azul que el header */
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background-color: #145a87;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+.btn {
+  display: block;
+  margin: 20px auto;
+}
+
+/* Estilos para los botones de añadir a listas */
+/* creo el contenedor de los botones a estilo de pildora/pokeball */
+.pill-actions {
+  display: inline-flex;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* estilo común (base) */
+.pill-actions button {
+  border: none;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* Mi equipo. Lado izquierdo (rojo) */
+.pill-left {
+  background: linear-gradient(180deg, #d32f2f, #b71c1c);
+  color: #fff; 
+}
+
+.pill-left:hover {
+  background: linear-gradient(180deg, #e26765, #d32f2f);
+}
+
+/* Lista de deseos. Lado derecho (blanco) */
+.pill-right {
+  background: linear-gradient(180deg, #ffffff, #cbcbcb);
+  color: #000000;
+}
+
+.pill-right:hover {
+  background: linear-gradient(180deg, #ededed, #c1c0c0);
+}
+
+/* Mi equipo (estilo de x Quitar) */
+.team-btn:not(:contains("+")) {
+  background: linear-gradient(180deg, #37474f, #263238);
+}
+
+.team-btn:not(:contains("+")):hover {
+  background: linear-gradient(180deg, #455a64, #37474f);
+}
+
+/* Lista de deseos (estilo de x Quitar) */
+.wish-btn:not(:contains("+")) {
+  background: linear-gradient(180deg, #607d8b, #455a64);
+  color: #fff;
+}
+
+.wish-btn:not(:contains("+")):hover {
+  background: linear-gradient(180deg, #78909c, #546e7a);
+}
+
+
+/* Estilo botón eliminar de las listas */
+/* botón eliminar */
+#listasContainer .pokemon-card button {
+  background: linear-gradient(180deg, #d32f2f, #b71c1c);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* estado hover eliminar */
+#listasContainer .pokemon-card button:hover {
+  background: linear-gradient(180deg, #e53935, #c62828);
+  transform: translateY(-1px);
+}
